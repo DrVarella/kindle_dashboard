@@ -4,30 +4,45 @@
   <meta charset="utf-8">
   <title>Calendário – Versão Kindle</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Atualiza a página a cada 60s (mais confiável no Kindle do que setInterval) -->
+  <!-- Atualiza a página a cada 60s (no Kindle funciona melhor que JS contínuo) -->
   <meta http-equiv="refresh" content="60">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
-    body{font-family: Arial, sans-serif;background:#fff;color:#000}
-    .container{display:flex;flex-direction:row;min-height:100vh;width:100%}
-    .secao-relogio{flex:1;min-width:320px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:20px;border-right:2px solid #000}
-    .relogio{font-family:"Courier New", monospace;font-weight:bold;font-size:120px;line-height:1;margin-bottom:16px}
+    html,body{height:100%}
+    body{font-family: Arial, sans-serif;background:#fff;color:#000;overflow:hidden}
+
+    /* contêiner base (paisagem “real”) */
+    .viewport{
+      display:flex;flex-direction:row;min-height:100vh;width:100vw;
+      transform-origin: left top;
+      position:relative;
+    }
+    /* quando girado 90° para “paisagem” mesmo em aparelho retrato */
+    .viewport.rotated{
+      transform: rotate(90deg);
+      /* quando rotaciona, a largura vira a altura da tela e vice-versa */
+      width: 100vh;
+      height: 100vw;
+    }
+
+    .secao-relogio{flex:1;min-width:300px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:18px;border-right:2px solid #000}
+    .relogio{font-family:"Courier New", monospace;font-weight:bold;font-size:120px;line-height:1;margin-bottom:12px}
     .data{font-size:22px;margin-bottom:6px}
     .semana{font-size:18px;color:#444}
-    .secao-eventos{flex:2;padding:24px}
-    .topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-    .titulo{font-size:26px;font-weight:bold}
-    .nav{display:flex;gap:8px}
-    .btn{border:2px solid #000;background:#fff;padding:8px 10px;font-weight:bold}
-    .lista{display:flex;flex-direction:column;gap:10px;margin-top:8px}
-    .evento{border-left:4px solid #999;padding:10px 12px;background:#f5f5f5}
+    .secao-eventos{flex:2;padding:18px}
+    .topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
+    .titulo{font-size:24px;font-weight:bold}
+    .nav{display:flex;gap:6px;flex-wrap:wrap}
+    .btn{border:2px solid #000;background:#fff;padding:6px 10px;font-weight:bold}
+    .lista{display:flex;flex-direction:column;gap:8px;margin-top:6px}
+    .evento{border-left:4px solid #999;padding:8px 10px;background:#f5f5f5}
     .evento.atual{background:#fff9e6;border-left-color:#caa400;font-weight:bold}
-    .evento.passado{opacity:.5;background:#e8e8e8}
-    .sem{color:#777;text-align:center;padding:24px}
+    .evento.passado{opacity:.55;background:#e8e8e8}
+    .sem{color:#777;text-align:center;padding:18px}
   </style>
 </head>
 <body>
-  <div class="container">
+  <div id="vp" class="viewport">
     <section class="secao-relogio">
       <div id="relogio" class="relogio">00:00</div>
       <div id="data" class="data">–</div>
@@ -41,6 +56,7 @@
           <button class="btn" id="btnOntem">Ontem</button>
           <button class="btn" id="btnHoje">Hoje</button>
           <button class="btn" id="btnAmanha">Amanhã</button>
+          <button class="btn" id="btnRot">Girar 90°</button>
         </div>
       </div>
       <div id="lista" class="lista"><div class="sem">Carregando…</div></div>
@@ -48,11 +64,11 @@
   </div>
 
   <script>
-  // ====== CONFIGURAÇÃO ======
-  // Ajuste manual de fuso/adiantamento (em minutos). Ex.: -180 para Brasília se o Kindle estiver em UTC.
-  var TIME_OFFSET_MINUTES = 0;
+  // ====== CONFIG ======
+  // Ajuste fixo de fuso: -180 = -3h (Brasília se o Kindle estiver 3h adiantado)
+  var TIME_OFFSET_MINUTES = -180;
 
-  // Seus eventos (use os existentes; REMOVIDO o bloco que sobrescrevia hoje/ontem/amanhã)  :contentReference[oaicite:1]{index=1}
+  // Seus eventos (mantidos; sem sobrescrita de “exemplos”)
   var eventosData = {
     "2025-11-05":[{"titulo":"⭐ Dia de Guarda","inicio":"00:00","fim":"23:59"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"},{"titulo":"Probabilidade","inicio":"17:00","fim":"20:00"},{"titulo":"Jantar","inicio":"20:00","fim":"21:00"},{"titulo":"Exame","inicio":"21:00","fim":"21:15"},{"titulo":"Ir dormir","inicio":"22:30","fim":"22:30"}],
     "2025-11-06":[{"titulo":"Tempo da Manhã","inicio":"05:00","fim":"08:00"},{"titulo":"Probabilidade","inicio":"08:00","fim":"11:00"},{"titulo":"Terço","inicio":"10:00","fim":"10:45"},{"titulo":"Almoço","inicio":"12:40","fim":"13:30"},{"titulo":"Leitura Espiritual","inicio":"13:45","fim":"14:00"},{"titulo":"Monitoria BV - Math 2","inicio":"14:00","fim":"16:00"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"},{"titulo":"Probabilidade","inicio":"17:00","fim":"20:00"},{"titulo":"Jantar","inicio":"20:00","fim":"21:00"},{"titulo":"Exame","inicio":"21:00","fim":"21:15"},{"titulo":"Ir dormir","inicio":"22:30","fim":"22:30"}],
@@ -64,15 +80,11 @@
     "2025-11-12":[{"titulo":"⭐ Dia de Guarda","inicio":"00:00","fim":"23:59"},{"titulo":"Tempo da Manhã","inicio":"05:00","fim":"08:00"},{"titulo":"Terço ","inicio":"08:00","fim":"08:30"},{"titulo":"Tênis de Mesa","inicio":"08:30","fim":"10:00"},{"titulo":"Contemplação","inicio":"10:15","fim":"10:25"},{"titulo":"Almoço","inicio":"12:40","fim":"13:30"},{"titulo":"Leitura Espiritual","inicio":"13:45","fim":"14:00"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"}]
   };
 
-  // ====== FUNÇÕES ======
   function agoraCorrigido(){
     var d = new Date();
     return new Date(d.getTime() + TIME_OFFSET_MINUTES*60000);
   }
-  function ymd(d){
-    var a=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), dia=('0'+d.getDate()).slice(-2);
-    return a+'-'+m+'-'+dia;
-  }
+  function ymd(d){var a=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), dia=('0'+d.getDate()).slice(-2);return a+'-'+m+'-'+dia;}
   function minutos(hhmm){var p=hhmm.split(':'), h=parseInt(p[0],10)||0, m=parseInt(p[1],10)||0; return h*60+m;}
   var meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   var dias=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
@@ -85,7 +97,6 @@
     document.getElementById('data').innerHTML = n.getDate()+' de '+meses[n.getMonth()];
     document.getElementById('semana').innerHTML = dias[n.getDay()];
   }
-
   function estadoEvento(evt, baseDate){
     var n=agoraCorrigido();
     var isHoje = ymd(n)===ymd(baseDate);
@@ -96,7 +107,6 @@
     if (t>=i && t<f) return 'atual';
     return 'passado';
   }
-
   function desenharEventos(){
     var key = ymd(dataSel);
     var evts = eventosData[key] || [];
@@ -116,16 +126,19 @@
     }
     lista.innerHTML = html;
   }
-
-  function atualizar(){
-    desenharHorario();
-    desenharEventos();
-  }
+  function atualizar(){desenharHorario();desenharEventos();}
 
   // Navegação
   document.getElementById('btnOntem').onclick=function(){ dataSel = new Date(agoraCorrigido().getTime()-86400000); atualizar(); };
   document.getElementById('btnHoje').onclick=function(){ dataSel = agoraCorrigido(); atualizar(); };
   document.getElementById('btnAmanha').onclick=function(){ dataSel = new Date(agoraCorrigido().getTime()+86400000); atualizar(); };
+
+  // Rotação 90°
+  document.getElementById('btnRot').onclick=function(){
+    var vp = document.getElementById('vp');
+    var on = vp.className.indexOf('rotated')>=0;
+    if(on){ vp.className = 'viewport'; } else { vp.className = 'viewport rotated'; }
+  };
 
   // Inicialização
   atualizar();

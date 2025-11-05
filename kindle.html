@@ -4,76 +4,87 @@
   <meta charset="utf-8">
   <title>Calendário – Versão Kindle</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Atualiza a página a cada 60s (no Kindle funciona melhor que JS contínuo) -->
   <meta http-equiv="refresh" content="60">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{height:100%}
-    body{
-      font-family: Arial, sans-serif;background:#fff;color:#000;overflow:hidden;
-      display:flex;align-items:flex-start;justify-content:flex-start;min-height:100vh;
-    }
+    body{font-family:Arial, sans-serif;background:#fff;color:#000;overflow:hidden}
 
-    /* contêiner base (paisagem “real”) */
+    /* Viewport base: ocupa a tela toda */
     .viewport{
-      display:flex;flex-direction:row;
-      width:calc(10cm + 3cm);height:calc(9cm + 3.1cm); /* amplia 2 cm à esquerda, 1 cm à direita, 1.8 cm no topo e 1.3 cm na base */
-      max-width:100vw;max-height:100vh;
-      transform-origin: left top;
       position:relative;
-      box-shadow:0 0 6px rgba(0,0,0,0.2);
+      width:100vw; height:100vh;
+      display:flex; flex-direction:row;
+      transform-origin:left top;
     }
-    /* quando girado 90° para “paisagem” mesmo em aparelho retrato */
+    /* Rotação 90° estável (sem cm) */
     .viewport.rotated{
-      transform: rotate(90deg) translateY(-100%); /* gira e desloca para caber em retrato */
-      width:calc(9cm + 3.1cm);
-      height:calc(10cm + 3cm);
+      transform:rotate(90deg) translateY(-100%);
+      width:100vh; height:100vw; /* troca eixos após girar */
     }
 
-    .secao-relogio{flex:0 0 80%;min-width:0;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:12px;border-right:2px solid #000}
-    .relogio{font-family:"Courier New", monospace;font-weight:bold;font-size:110px;line-height:1;margin-bottom:10px}
-    .data{font-size:22px;margin-bottom:6px}
-    .semana{font-size:18px;color:#444;text-align:center}
-    .secao-eventos{flex:0 0 20%;padding:12px;min-width:0;display:flex;flex-direction:column}
-    .topo{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;gap:8px}
-    .titulo{font-size:26px;font-weight:bold}
-    .nav{display:flex;gap:6px;flex-wrap:wrap}
-    .btn{border:2px solid #000;background:#fff;padding:4px 6px;font-weight:bold;font-size:12px}
-    .lista{display:flex;flex-direction:column;gap:6px;margin-top:6px;flex:1;overflow-y:auto}
-    .evento{border-left:4px solid #999;padding:8px 10px;background:#f5f5f5}
-    .evento.atual{background:#fff9e6;border-left-color:#caa400;font-weight:bold}
-    .evento.passado{opacity:.55;background:#e8e8e8}
-    .sem{color:#777;text-align:center;padding:18px}
+    /* 80% relógio | 20% eventos */
+    .secao-relogio{flex:0 0 80%; min-width:0; display:flex; flex-direction:column; border-right:2px solid #000}
+    .secao-eventos{flex:0 0 20%; min-width:0; display:flex; flex-direction:column}
+
+    /* Barra de botões no topo do relógio */
+    .barra-topo{
+      display:flex; gap:6px; padding:6px; border-bottom:2px solid #000;
+      justify-content:flex-start; align-items:center;
+    }
+    .btn{border:2px solid #000; background:#fff; padding:4px 6px; font-weight:bold; font-size:12px}
+
+    /* Relógio central */
+    .relogio-wrap{
+      flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;
+      padding:8px;
+    }
+    .relogio{font-family:"Courier New", monospace; font-weight:bold;
+      /* tamanho responsivo sem esmagar */
+      font-size: min(18vh, 18vw); line-height:1; margin-bottom:8px; text-align:center;
+    }
+    .data{font-size:2.6vh; margin-bottom:4px; text-align:center}
+    .semana{font-size:2.2vh; color:#444; text-align:center}
+
+    /* Eventos (20%) com rolagem */
+    .topo-eventos{display:flex; align-items:center; justify-content:center; padding:6px; border-bottom:2px solid #000}
+    .titulo{font-size:2.4vh; font-weight:bold; text-align:center}
+    .lista{flex:1; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:6px}
+    .evento{border-left:4px solid #999; padding:6px 8px; background:#f5f5f5; font-size:2vh}
+    .evento.atual{background:#fff9e6; border-left-color:#caa400; font-weight:bold}
+    .evento.passado{opacity:.6; background:#e8e8e8}
+    .sem{color:#777; text-align:center; padding:12px; font-size:2vh}
   </style>
 </head>
 <body>
-  <div id="vp" class="viewport rotated">
+  <div id="vp" class="viewport rotated"><!-- começa já em paisagem -->
+    <!-- LADO ESQUERDO: RELÓGIO (80%) -->
     <section class="secao-relogio">
-      <div id="relogio" class="relogio">00:00</div>
-      <div id="data" class="data">–</div>
-      <div id="semana" class="semana">–</div>
+      <div class="barra-topo">
+        <button class="btn" id="btnOntem">Ontem</button>
+        <button class="btn" id="btnHoje">Hoje</button>
+        <button class="btn" id="btnAmanha">Amanhã</button>
+        <button class="btn" id="btnRot">Girar 90°</button>
+      </div>
+      <div class="relogio-wrap">
+        <div id="relogio" class="relogio">00:00</div>
+        <div id="data" class="data">–</div>
+        <div id="semana" class="semana">–</div>
+      </div>
     </section>
 
+    <!-- LADO DIREITO: EVENTOS (20%) -->
     <section class="secao-eventos">
-      <div class="topo">
-        <div id="titulo" class="titulo">Eventos</div>
-        <div class="nav">
-          <button class="btn" id="btnOntem">Ontem</button>
-          <button class="btn" id="btnHoje">Hoje</button>
-          <button class="btn" id="btnAmanha">Amanhã</button>
-          <button class="btn" id="btnRot">Girar 90°</button>
-        </div>
-      </div>
+      <div class="topo-eventos"><div id="titulo" class="titulo">Eventos</div></div>
       <div id="lista" class="lista"><div class="sem">Carregando…</div></div>
     </section>
   </div>
 
   <script>
   // ====== CONFIG ======
-  // Ajuste fixo de fuso: -180 = -3h (Brasília se o Kindle estiver 3h adiantado)
-  var TIME_OFFSET_MINUTES = -180;
+  var TIME_OFFSET_MINUTES = -180; // -3h
 
-  // Seus eventos (mantidos; sem sobrescrita de “exemplos”)
+  // Seus eventos (sem sobrescrita de “exemplos”)
   var eventosData = {
     "2025-11-05":[{"titulo":"⭐ Dia de Guarda","inicio":"00:00","fim":"23:59"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"},{"titulo":"Probabilidade","inicio":"17:00","fim":"20:00"},{"titulo":"Jantar","inicio":"20:00","fim":"21:00"},{"titulo":"Exame","inicio":"21:00","fim":"21:15"},{"titulo":"Ir dormir","inicio":"22:30","fim":"22:30"}],
     "2025-11-06":[{"titulo":"Tempo da Manhã","inicio":"05:00","fim":"08:00"},{"titulo":"Probabilidade","inicio":"08:00","fim":"11:00"},{"titulo":"Terço","inicio":"10:00","fim":"10:45"},{"titulo":"Almoço","inicio":"12:40","fim":"13:30"},{"titulo":"Leitura Espiritual","inicio":"13:45","fim":"14:00"},{"titulo":"Monitoria BV - Math 2","inicio":"14:00","fim":"16:00"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"},{"titulo":"Probabilidade","inicio":"17:00","fim":"20:00"},{"titulo":"Jantar","inicio":"20:00","fim":"21:00"},{"titulo":"Exame","inicio":"21:00","fim":"21:15"},{"titulo":"Ir dormir","inicio":"22:30","fim":"22:30"}],
@@ -85,67 +96,50 @@
     "2025-11-12":[{"titulo":"⭐ Dia de Guarda","inicio":"00:00","fim":"23:59"},{"titulo":"Tempo da Manhã","inicio":"05:00","fim":"08:00"},{"titulo":"Terço ","inicio":"08:00","fim":"08:30"},{"titulo":"Tênis de Mesa","inicio":"08:30","fim":"10:00"},{"titulo":"Contemplação","inicio":"10:15","fim":"10:25"},{"titulo":"Almoço","inicio":"12:40","fim":"13:30"},{"titulo":"Leitura Espiritual","inicio":"13:45","fim":"14:00"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"}]
   };
 
-  function agoraCorrigido(){
-    var d = new Date();
-    return new Date(d.getTime() + TIME_OFFSET_MINUTES*60000);
-  }
-  function ymd(d){var a=d.getFullYear(), m=('0'+(d.getMonth()+1)).slice(-2), dia=('0'+d.getDate()).slice(-2);return a+'-'+m+'-'+dia;}
-  function minutos(hhmm){var p=hhmm.split(':'), h=parseInt(p[0],10)||0, m=parseInt(p[1],10)||0; return h*60+m;}
+  function agoraCorrigido(){ var d=new Date(); return new Date(d.getTime()+TIME_OFFSET_MINUTES*60000); }
+  function ymd(d){var a=d.getFullYear(),m=('0'+(d.getMonth()+1)).slice(-2),dia=('0'+d.getDate()).slice(-2);return a+'-'+m+'-'+dia;}
+  function minutos(hhmm){var p=hhmm.split(':'),h=parseInt(p[0],10)||0,m=parseInt(p[1],10)||0;return h*60+m;}
   var meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   var dias=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
-
   var dataSel = agoraCorrigido();
 
   function desenharHorario(){
     var n=agoraCorrigido(), h=('0'+n.getHours()).slice(-2), m=('0'+n.getMinutes()).slice(-2);
-    document.getElementById('relogio').innerHTML = h+':'+m;
-    document.getElementById('data').innerHTML = n.getDate()+' de '+meses[n.getMonth()];
-    document.getElementById('semana').innerHTML = dias[n.getDay()];
+    document.getElementById('relogio').innerHTML=h+':'+m;
+    document.getElementById('data').innerHTML=n.getDate()+' de '+meses[n.getMonth()];
+    document.getElementById('semana').innerHTML=dias[n.getDay()];
   }
   function estadoEvento(evt, baseDate){
-    var n=agoraCorrigido();
-    var isHoje = ymd(n)===ymd(baseDate);
-    if(!isHoje){ return baseDate < n ? 'passado':'futuro'; }
-    var t = n.getHours()*60 + n.getMinutes();
-    var i = minutos(evt.inicio), f = minutos(evt.fim);
-    if (t<i) return 'futuro';
-    if (t>=i && t<f) return 'atual';
-    return 'passado';
+    var n=agoraCorrigido(), isHoje=ymd(n)===ymd(baseDate);
+    if(!isHoje){ return baseDate<n?'passado':'futuro'; }
+    var t=n.getHours()*60+n.getMinutes(), i=minutos(evt.inicio), f=minutos(evt.fim);
+    if(t<i) return 'futuro'; if(t>=i && t<f) return 'atual'; return 'passado';
   }
   function desenharEventos(){
-    var key = ymd(dataSel);
-    var evts = eventosData[key] || [];
-    var titulo = 'Eventos de ';
-    var n = agoraCorrigido(), hj=ymd(n);
-    var ont = new Date(n.getTime()-86400000), am = new Date(n.getTime()+86400000);
-    if(key===hj) titulo+='Hoje'; else if(key===ymd(ont)) titulo+='Ontem'; else if(key===ymd(am)) titulo+='Amanhã'; else titulo+=dataSel.getDate()+' de '+meses[dataSel.getMonth()];
-    document.getElementById('titulo').innerHTML = titulo;
-
-    var lista = document.getElementById('lista');
-    if(!evts.length){ lista.innerHTML = '<div class="sem">Nenhum evento para este dia</div>'; return; }
-    var html='', i;
-    for(i=0;i<evts.length;i++){
-      var e = evts[i];
-      var st = estadoEvento(e, dataSel);
-      html += '<div class="evento '+st+'"><div class="t">'+e.titulo+'</div><div class="h">'+e.inicio+' – '+e.fim+'</div></div>';
+    var key=ymd(dataSel), evts=eventosData[key]||[];
+    var n=agoraCorrigido(), hj=ymd(n), ont=new Date(n.getTime()-86400000), am=new Date(n.getTime()+86400000);
+    var titulo='Eventos de ' + (key===hj?'Hoje':(key===ymd(ont)?'Ontem':(key===ymd(am)?'Amanhã':(dataSel.getDate()+' de '+meses[dataSel.getMonth()]))));
+    document.getElementById('titulo').innerHTML=titulo;
+    var lista=document.getElementById('lista');
+    if(!evts.length){ lista.innerHTML='<div class="sem">Nenhum evento para este dia</div>'; return; }
+    var html='', i; for(i=0;i<evts.length;i++){ var e=evts[i], st=estadoEvento(e,dataSel);
+      html+='<div class="evento '+st+'"><div class="t">'+e.titulo+'</div><div class="h">'+e.inicio+' – '+e.fim+'</div></div>';
     }
-    lista.innerHTML = html;
+    lista.innerHTML=html;
   }
   function atualizar(){desenharHorario();desenharEventos();}
 
   // Navegação
-  document.getElementById('btnOntem').onclick=function(){ dataSel = new Date(agoraCorrigido().getTime()-86400000); atualizar(); };
-  document.getElementById('btnHoje').onclick=function(){ dataSel = agoraCorrigido(); atualizar(); };
-  document.getElementById('btnAmanha').onclick=function(){ dataSel = new Date(agoraCorrigido().getTime()+86400000); atualizar(); };
+  document.getElementById('btnOntem').onclick=function(){ dataSel=new Date(agoraCorrigido().getTime()-86400000); atualizar(); };
+  document.getElementById('btnHoje').onclick=function(){ dataSel=agoraCorrigido(); atualizar(); };
+  document.getElementById('btnAmanha').onclick=function(){ dataSel=new Date(agoraCorrigido().getTime()+86400000); atualizar(); };
 
   // Rotação 90°
   document.getElementById('btnRot').onclick=function(){
-    var vp = document.getElementById('vp');
-    var on = vp.className.indexOf('rotated')>=0;
-    if(on){ vp.className = 'viewport'; } else { vp.className = 'viewport rotated'; }
+    var vp=document.getElementById('vp');
+    if(vp.className.indexOf('rotated')>=0){ vp.className='viewport'; } else { vp.className='viewport rotated'; }
   };
 
-  // Inicialização
   atualizar();
   </script>
 </body>

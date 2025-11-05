@@ -1,0 +1,11 @@
+# Dependências Python para o Sistema de Calendário Kindle
+# Instalação: pip install -r requirements.txt
+
+# Google Calendar API - Autenticação e autorização OAuth 2.0
+google-auth-oauthlib>=1.0.0
+
+# Google Calendar API - Cliente HTTP
+google-auth-httplib2>=0.1.0
+
+# Google Calendar API - Cliente Python
+google-api-python-client>=2.100.0

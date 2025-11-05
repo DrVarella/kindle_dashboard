@@ -10,27 +10,28 @@
     html,body{height:100%}
     body{font-family:Arial, sans-serif;background:#fff;color:#000;overflow:hidden}
 
-    /* Viewport base: ocupa a tela toda */
+    /* variável de escala do relógio (1.0 = padrão) */
+    :root{ --clock-scale: 1; }
+
     .viewport{
       position:relative;
       width:100vw; height:100vh;
       display:flex; flex-direction:row;
       transform-origin:left top;
     }
-    /* Rotação 90° estável (sem cm) */
     .viewport.rotated{
       transform:rotate(90deg) translateY(-100%);
-      width:100vh; height:100vw; /* troca eixos após girar */
+      width:100vh; height:100vw;
     }
 
-    /* 80% relógio | 20% eventos */
-    .secao-relogio{flex:0 0 80%; min-width:0; display:flex; flex-direction:column; border-right:2px solid #000}
-    .secao-eventos{flex:0 0 20%; min-width:0; display:flex; flex-direction:column}
+    /* 70% relógio | 30% eventos */
+    .secao-relogio{flex:0 0 70%; min-width:0; display:flex; flex-direction:column; border-right:2px solid #000}
+    .secao-eventos{flex:0 0 30%; min-width:0; display:flex; flex-direction:column}
 
     /* Barra de botões no topo do relógio */
     .barra-topo{
       display:flex; gap:6px; padding:6px; border-bottom:2px solid #000;
-      justify-content:flex-start; align-items:center;
+      justify-content:flex-start; align-items:center; flex-wrap:wrap;
     }
     .btn{border:2px solid #000; background:#fff; padding:4px 6px; font-weight:bold; font-size:12px}
 
@@ -39,14 +40,16 @@
       flex:1; display:flex; flex-direction:column; justify-content:center; align-items:center;
       padding:8px;
     }
-    .relogio{font-family:"Courier New", monospace; font-weight:bold;
-      /* tamanho responsivo sem esmagar */
-      font-size: min(18vh, 18vw); line-height:1; margin-bottom:8px; text-align:center;
+    .relogio{
+      font-family:"Courier New", monospace; font-weight:bold;
+      /* base responsiva multiplicada pela escala */
+      font-size: calc(min(18vh, 18vw) * var(--clock-scale));
+      line-height:1; margin-bottom:8px; text-align:center;
     }
     .data{font-size:2.6vh; margin-bottom:4px; text-align:center}
     .semana{font-size:2.2vh; color:#444; text-align:center}
 
-    /* Eventos (20%) com rolagem */
+    /* Eventos (30%) com rolagem */
     .topo-eventos{display:flex; align-items:center; justify-content:center; padding:6px; border-bottom:2px solid #000}
     .titulo{font-size:2.4vh; font-weight:bold; text-align:center}
     .lista{flex:1; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:6px}
@@ -57,14 +60,17 @@
   </style>
 </head>
 <body>
-  <div id="vp" class="viewport rotated"><!-- começa já em paisagem -->
-    <!-- LADO ESQUERDO: RELÓGIO (80%) -->
+  <div id="vp" class="viewport rotated">
+    <!-- LADO ESQUERDO: RELÓGIO (70%) -->
     <section class="secao-relogio">
       <div class="barra-topo">
         <button class="btn" id="btnOntem">Ontem</button>
         <button class="btn" id="btnHoje">Hoje</button>
         <button class="btn" id="btnAmanha">Amanhã</button>
         <button class="btn" id="btnRot">Girar 90°</button>
+        <!-- controles do relógio -->
+        <button class="btn" id="btnClockMinus">Relógio −</button>
+        <button class="btn" id="btnClockPlus">Relógio +</button>
       </div>
       <div class="relogio-wrap">
         <div id="relogio" class="relogio">00:00</div>
@@ -73,7 +79,7 @@
       </div>
     </section>
 
-    <!-- LADO DIREITO: EVENTOS (20%) -->
+    <!-- LADO DIREITO: EVENTOS (30%) -->
     <section class="secao-eventos">
       <div class="topo-eventos"><div id="titulo" class="titulo">Eventos</div></div>
       <div id="lista" class="lista"><div class="sem">Carregando…</div></div>
@@ -83,8 +89,9 @@
   <script>
   // ====== CONFIG ======
   var TIME_OFFSET_MINUTES = -180; // -3h
+  var clockScale = 1.0;           // escala do relógio (ajustável)
 
-  // Seus eventos (sem sobrescrita de “exemplos”)
+  // Eventos (como estavam)
   var eventosData = {
     "2025-11-05":[{"titulo":"⭐ Dia de Guarda","inicio":"00:00","fim":"23:59"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"},{"titulo":"Probabilidade","inicio":"17:00","fim":"20:00"},{"titulo":"Jantar","inicio":"20:00","fim":"21:00"},{"titulo":"Exame","inicio":"21:00","fim":"21:15"},{"titulo":"Ir dormir","inicio":"22:30","fim":"22:30"}],
     "2025-11-06":[{"titulo":"Tempo da Manhã","inicio":"05:00","fim":"08:00"},{"titulo":"Probabilidade","inicio":"08:00","fim":"11:00"},{"titulo":"Terço","inicio":"10:00","fim":"10:45"},{"titulo":"Almoço","inicio":"12:40","fim":"13:30"},{"titulo":"Leitura Espiritual","inicio":"13:45","fim":"14:00"},{"titulo":"Monitoria BV - Math 2","inicio":"14:00","fim":"16:00"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"},{"titulo":"Probabilidade","inicio":"17:00","fim":"20:00"},{"titulo":"Jantar","inicio":"20:00","fim":"21:00"},{"titulo":"Exame","inicio":"21:00","fim":"21:15"},{"titulo":"Ir dormir","inicio":"22:30","fim":"22:30"}],
@@ -127,6 +134,12 @@
     }
     lista.innerHTML=html;
   }
+  function aplicarClockScale(){
+    // limita entre 0.6x e 1.6x para não “quebrar”
+    if(clockScale<0.6) clockScale=0.6;
+    if(clockScale>1.6) clockScale=1.6;
+    document.documentElement.style.setProperty('--clock-scale', String(clockScale));
+  }
   function atualizar(){desenharHorario();desenharEventos();}
 
   // Navegação
@@ -140,6 +153,11 @@
     if(vp.className.indexOf('rotated')>=0){ vp.className='viewport'; } else { vp.className='viewport rotated'; }
   };
 
+  // Controles do relógio (+/-)
+  document.getElementById('btnClockMinus').onclick=function(){ clockScale-=0.1; aplicarClockScale(); };
+  document.getElementById('btnClockPlus').onclick=function(){ clockScale+=0.1; aplicarClockScale(); };
+
+  aplicarClockScale();
   atualizar();
   </script>
 </body>

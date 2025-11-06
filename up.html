@@ -29,10 +29,11 @@
 
     /* Proporção dinâmica via variáveis CSS */
     .secao-relogio{
-      flex:0 0 calc(var(--relogio-percent) * 1%); 
-      min-width:0; 
-      display:flex; 
-      flex-direction:column; 
+      position:relative;
+      flex:0 0 calc(var(--relogio-percent) * 1%);
+      min-width:0;
+      display:flex;
+      flex-direction:column;
       border-right:2px solid #000;
       background:#f8f8f8;
     }
@@ -44,11 +45,11 @@
       background:#fff;
     }
 
-    /* Painel de Controles - fora do viewport para rotacionar independentemente */
+    /* Painel de Controles - ancorado na seção do relógio */
     .painel-controles{
-      position:fixed;
+      position:absolute;
       top:10px;
-      right:10px;
+      left:10px;
       background:rgba(255,255,255,0.98);
       border:2px solid #000;
       border-radius:8px;
@@ -57,11 +58,6 @@
       z-index:1000;
       max-width:340px;
       transition:all 0.3s ease;
-    }
-    /* Quando a viewport está rotacionada, o painel também rotaciona 90 graus (sentido horário) */
-    .painel-controles.rotacionado{
-      transform:rotate(90deg);
-      transform-origin:top right;
     }
     .painel-controles.minimizado{
       max-width:80px;
@@ -307,67 +303,67 @@
   </style>
 </head>
 <body>
-  <!-- Painel de Controles Flutuante -->
-  <div id="painelControles" class="painel-controles minimizado">
-    <button class="btn-toggle" onclick="toggleControles()">...</button>
-    <div class="conteudo-controles">
-      <div class="grupo-controle">
-        <label class="label-controle">
-          Tamanho do Relógio
-          <span class="valor-controle" id="valorTamanho">120px</span>
-        </label>
-        <input
-          type="range"
-          class="slider-controle"
-          id="sliderTamanho"
-          min="60"
-          max="200"
-          value="120"
-          step="10"
-          oninput="ajustarTamanho(this.value)">
-      </div>
-
-      <div class="grupo-controle">
-        <label class="label-controle">
-          Proporção Relógio/Eventos
-          <span class="valor-controle" id="valorProporcao">70/30</span>
-        </label>
-        <input
-          type="range"
-          class="slider-controle"
-          id="sliderProporcao"
-          min="40"
-          max="85"
-          value="70"
-          step="5"
-          oninput="ajustarProporcao(this.value)">
-      </div>
-      
-      <div class="grupo-controle">
-        <label class="label-controle">Selecionar Dia</label>
-        <div class="botoes-dia">
-          <button class="btn-dia" id="btnOntem" onclick="irParaDia(-1)">Ontem</button>
-          <button class="btn-dia ativo" id="btnHoje" onclick="irParaDia(0)">Hoje</button>
-          <button class="btn-dia" id="btnAmanha" onclick="irParaDia(1)">Amanhã</button>
-        </div>
-      </div>
-
-      <div class="grupo-controle">
-        <button class="btn-girar" id="btnRot" onclick="girarTela()">🔄 Girar 90°</button>
-      </div>
-
-      <div class="grupo-controle">
-        <div class="checkbox-container">
-          <input type="checkbox" id="checkMostrarEventos" checked onchange="toggleEventos()">
-          <label for="checkMostrarEventos">Mostrar Eventos</label>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <div id="vp" class="viewport rotated">
     <!-- LADO ESQUERDO: RELÓGIO -->
     <section class="secao-relogio">
+      <!-- Painel de Controles Flutuante -->
+      <div id="painelControles" class="painel-controles minimizado">
+        <button class="btn-toggle" onclick="toggleControles()">...</button>
+        <div class="conteudo-controles">
+          <div class="grupo-controle">
+            <label class="label-controle">
+              Tamanho do Relógio
+              <span class="valor-controle" id="valorTamanho">120px</span>
+            </label>
+            <input
+              type="range"
+              class="slider-controle"
+              id="sliderTamanho"
+              min="60"
+              max="200"
+              value="120"
+              step="10"
+              oninput="ajustarTamanho(this.value)">
+          </div>
+
+          <div class="grupo-controle">
+            <label class="label-controle">
+              Proporção Relógio/Eventos
+              <span class="valor-controle" id="valorProporcao">70/30</span>
+            </label>
+            <input
+              type="range"
+              class="slider-controle"
+              id="sliderProporcao"
+              min="40"
+              max="85"
+              value="70"
+              step="5"
+              oninput="ajustarProporcao(this.value)">
+          </div>
+
+          <div class="grupo-controle">
+            <label class="label-controle">Selecionar Dia</label>
+            <div class="botoes-dia">
+              <button class="btn-dia" id="btnOntem" onclick="irParaDia(-1)">Ontem</button>
+              <button class="btn-dia ativo" id="btnHoje" onclick="irParaDia(0)">Hoje</button>
+              <button class="btn-dia" id="btnAmanha" onclick="irParaDia(1)">Amanhã</button>
+            </div>
+          </div>
+
+          <div class="grupo-controle">
+            <button class="btn-girar" id="btnRot" onclick="girarTela()">🔄 Girar 90°</button>
+          </div>
+
+          <div class="grupo-controle">
+            <div class="checkbox-container">
+              <input type="checkbox" id="checkMostrarEventos" checked onchange="toggleEventos()">
+              <label for="checkMostrarEventos">Mostrar Eventos</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="relogio-wrap">
         <div id="relogio" class="relogio">00:00</div>
         <div id="data" class="data">–</div>
@@ -434,15 +430,14 @@
   // ====== CONTROLES ======
   function toggleControles(){
     var painel = document.getElementById('painelControles');
-    var estaRotacionado = painel.className.indexOf('rotacionado') >= 0;
 
     if(painel.className.indexOf('minimizado') >= 0){
       // Expandir
-      painel.className = estaRotacionado ? 'painel-controles rotacionado' : 'painel-controles';
+      painel.className = 'painel-controles';
       localStorage.setItem('painelAberto', 'true');
     } else {
       // Minimizar
-      painel.className = estaRotacionado ? 'painel-controles minimizado rotacionado' : 'painel-controles minimizado';
+      painel.className = 'painel-controles minimizado';
       localStorage.setItem('painelAberto', 'false');
     }
   }
@@ -484,24 +479,11 @@
 
   function girarTela(){
     var vp = document.getElementById('vp');
-    var painel = document.getElementById('painelControles');
 
     if(vp.className.indexOf('rotated') >= 0){
       vp.className = 'viewport';
-      // Remover rotação do painel
-      if(painel.className.indexOf('minimizado') >= 0){
-        painel.className = 'painel-controles minimizado';
-      } else {
-        painel.className = 'painel-controles';
-      }
     } else {
       vp.className = 'viewport rotated';
-      // Adicionar rotação ao painel
-      if(painel.className.indexOf('minimizado') >= 0){
-        painel.className = 'painel-controles minimizado rotacionado';
-      } else {
-        painel.className = 'painel-controles rotacionado';
-      }
     }
 
     // Salvar preferência
@@ -697,22 +679,16 @@
 
   // ====== CARREGAR PREFERÊNCIAS ======
   function carregarPreferencias(){
-    var rotSalva = localStorage.getItem('rotacao');
-    var estaRotacionado = rotSalva && rotSalva.indexOf('rotated') >= 0;
-
     // Carregar rotação salva da viewport
+    var rotSalva = localStorage.getItem('rotacao');
     if(rotSalva){
       document.getElementById('vp').className = rotSalva;
     }
 
-    // Carregar estado do painel e aplicar rotação se necessário
+    // Carregar estado do painel
     var painelAberto = localStorage.getItem('painelAberto');
-    var painel = document.getElementById('painelControles');
-
     if(painelAberto === 'true'){
-      painel.className = estaRotacionado ? 'painel-controles rotacionado' : 'painel-controles';
-    } else {
-      painel.className = estaRotacionado ? 'painel-controles minimizado rotacionado' : 'painel-controles minimizado';
+      document.getElementById('painelControles').className = 'painel-controles';
     }
 
     // Carregar tamanho do relógio salvo

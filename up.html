@@ -232,10 +232,7 @@
 
     /* Contador de Próximo Evento */
     .contador-evento{
-      position:absolute;
-      bottom:20px;
-      left:20px;
-      right:20px;
+      margin:20px;
       background:#fff;
       border:3px solid #000;
       border-radius:8px;
@@ -522,9 +519,17 @@
     var n = agoraCorrigido();
     var hj = ymd(n);
 
+    // Filtrar eventos que não têm estrela
+    var eventosValidos = [];
+    for(var i = 0; i < evts.length; i++){
+      if(evts[i].titulo.indexOf('⭐') === -1){
+        eventosValidos.push(evts[i]);
+      }
+    }
+
     // Só mostrar contador para hoje
     var contador = document.getElementById('contadorEvento');
-    if(key !== hj || evts.length === 0){
+    if(key !== hj || eventosValidos.length === 0){
       contador.style.display = 'none';
       return;
     }
@@ -534,9 +539,9 @@
     var eventoAtual = null;
     var proximoEvento = null;
 
-    // Procurar evento atual ou próximo
-    for(var i = 0; i < evts.length; i++){
-      var e = evts[i];
+    // Procurar evento atual ou próximo (ignorando eventos com estrela)
+    for(var i = 0; i < eventosValidos.length; i++){
+      var e = eventosValidos[i];
       var inicio = minutos(e.inicio);
       var fim = minutos(e.fim);
 

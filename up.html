@@ -2,112 +2,273 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8">
-  <title>Calendário – Kindle (Paisagem + Split Arrastável)</title>
+  <title>Calendário – Versão Kindle</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Refresh leve para o navegador do Kindle -->
-  <meta http-equiv="refresh" content="120">
+  <meta http-equiv="refresh" content="60">
   <style>
     *{margin:0;padding:0;box-sizing:border-box}
     html,body{height:100%}
     body{font-family:Arial, sans-serif;background:#fff;color:#000;overflow:hidden}
 
-    /* ===== Layout base ===== */
-    .container{position:relative;width:100vw;height:100vh;display:flex;flex-direction:row}
-    /* Modo retrato opcional */
-    .container.retrato{flex-direction:column}
-
-    /* Áreas: relógio (left) e eventos (right) */
-    .secao-relogio{min-width:120px;display:flex;flex-direction:column;border-right:2px solid #000}
-    .secao-eventos{min-width:140px;display:flex;flex-direction:column}
-
-    /* Splitter (divisor arrastável) */
-    .splitter{
-      width:18px; /* dedo no Kindle precisa área maior */
-      cursor:col-resize; background:repeating-linear-gradient(
-        90deg,#000 0,#000 2px,transparent 2px,transparent 8px);
-      border-left:2px solid #000;border-right:2px solid #000;
-      touch-action:none; /* habilita eventos de toque para arrastar */
+    /* variáveis dinâmicas */
+    :root{ 
+      --relogio-percent: 70; 
+      --eventos-percent: 30;
     }
 
-    /* Barra superior (abre painel) */
-    .controles-btn{
-      position:fixed;top:10px;left:10px;z-index:1000;
-      background:#000;color:#fff;border:none;border-radius:6px;
-      padding:8px 10px;font-weight:bold;font-size:14px
+    .viewport{
+      position:relative;
+      width:100vw; height:100vh;
+      display:flex; flex-direction:row;
+      transform-origin:left top;
     }
-    .controles-btn:active{transform:scale(.96)}
+    .viewport.rotated{
+      transform:rotate(90deg) translateY(-100%);
+      width:100vh; height:100vw;
+    }
 
-    /* Painel de controles (popup) */
-    .painel{position:fixed;top:60px;left:10px;z-index:999;width:320px;
-      background:#fff;border:2px solid #000;border-radius:10px;padding:14px;
-      box-shadow:0 4px 12px rgba(0,0,0,.25);display:none}
-    .painel.aberto{display:block}
-    .grupo{margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid #ddd}
-    .grupo:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
-    .rotulos{font-weight:bold;margin-bottom:8px}
-    .btn{border:2px solid #000;background:#fff;padding:6px 8px;font-weight:bold}
-    .btn.sel{background:#000;color:#fff}
-    .row{display:flex;gap:8px;flex-wrap:wrap}
-    .slider{width:100%;appearance:none;height:8px;background:#ddd;border-radius:4px}
-    .slider::-webkit-slider-thumb{appearance:none;width:20px;height:20px;border-radius:50%;background:#000}
+    /* Proporção dinâmica via variáveis CSS */
+    .secao-relogio{
+      flex:0 0 calc(var(--relogio-percent) * 1%); 
+      min-width:0; 
+      display:flex; 
+      flex-direction:column; 
+      border-right:2px solid #000;
+      background:#f8f8f8;
+    }
+    .secao-eventos{
+      flex:0 0 calc(var(--eventos-percent) * 1%); 
+      min-width:0; 
+      display:flex; 
+      flex-direction:column;
+      background:#fff;
+    }
 
-    /* Relógio */
-    .clock-top{display:flex;gap:6px;align-items:center;justify-content:flex-start;border-bottom:2px solid #000;padding:6px}
-    .relogio-wrap{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:8px}
-    .relogio{font-family:"Courier New",monospace;font-weight:bold;line-height:1;text-align:center}
-    .data{margin-top:6px;font-size:2.6vh;text-align:center}
-    .semana{font-size:2.2vh;color:#444;text-align:center}
+    /* Painel de Controles */
+    .painel-controles{
+      position:absolute;
+      top:10px;
+      right:10px;
+      background:rgba(255,255,255,0.95);
+      border:2px solid #000;
+      border-radius:6px;
+      padding:10px;
+      box-shadow:0 2px 8px rgba(0,0,0,0.2);
+      z-index:1000;
+      max-width:280px;
+    }
+    .painel-controles.minimizado .conteudo-controles{
+      display:none;
+    }
+    .btn-toggle{
+      background:#333;
+      color:#fff;
+      border:none;
+      padding:6px 12px;
+      cursor:pointer;
+      border-radius:4px;
+      font-size:13px;
+      font-weight:bold;
+      width:100%;
+      margin-bottom:8px;
+    }
+    .painel-controles.minimizado .btn-toggle{
+      margin-bottom:0;
+    }
+    .conteudo-controles{
+      display:block;
+    }
+    .grupo-controle{
+      margin-bottom:12px;
+    }
+    .label-controle{
+      display:block;
+      font-size:11px;
+      font-weight:bold;
+      margin-bottom:4px;
+      color:#333;
+    }
+    .slider-controle{
+      width:100%;
+      height:24px;
+      cursor:pointer;
+    }
+    .valor-controle{
+      display:inline-block;
+      font-weight:bold;
+      color:#000;
+      font-size:12px;
+      margin-left:6px;
+    }
+    .botoes-dia{
+      display:flex;
+      gap:4px;
+    }
+    .btn-dia{
+      flex:1;
+      padding:6px 4px;
+      background:#f0f0f0;
+      border:2px solid #999;
+      border-radius:4px;
+      cursor:pointer;
+      font-size:11px;
+      font-weight:bold;
+      text-align:center;
+    }
+    .btn-dia.ativo{
+      background:#333;
+      color:#fff;
+      border-color:#000;
+    }
+    .btn-girar{
+      width:100%;
+      padding:6px;
+      background:#fff;
+      border:2px solid #333;
+      border-radius:4px;
+      cursor:pointer;
+      font-size:11px;
+      font-weight:bold;
+    }
 
-    /* Eventos */
-    .topo-eventos{display:flex;align-items:center;justify-content:center;padding:6px;border-bottom:2px solid #000}
-    .titulo{font-size:2.4vh;font-weight:bold;text-align:center}
-    .lista{flex:1;overflow:auto;padding:8px;display:flex;flex-direction:column;gap:6px}
-    .evento{border-left:4px solid #999;padding:6px 8px;background:#f5f5f5;font-size:2vh}
-    .evento.atual{background:#fff9e6;border-left-color:#caa400;font-weight:bold}
-    .evento.passado{opacity:.6;background:#e8e8e8}
-    .sem{color:#777;text-align:center;padding:12px;font-size:2vh}
+    /* Relógio central */
+    .relogio-wrap{
+      flex:1; 
+      display:flex; 
+      flex-direction:column; 
+      justify-content:center; 
+      align-items:center;
+      padding:20px;
+    }
+    .relogio{
+      font-family:"Courier New", monospace; 
+      font-weight:bold;
+      /* tamanho responsivo baseado na proporção */
+      font-size:calc(min(22vh, 22vw) * (var(--relogio-percent) / 70));
+      line-height:1; 
+      margin-bottom:12px; 
+      text-align:center;
+      color:#000;
+    }
+    .data{
+      font-size:calc(2.8vh * (var(--relogio-percent) / 70)); 
+      margin-bottom:6px; 
+      text-align:center;
+      color:#333;
+    }
+    .semana{
+      font-size:calc(2.4vh * (var(--relogio-percent) / 70)); 
+      color:#666; 
+      text-align:center;
+    }
+
+    /* Eventos com rolagem */
+    .topo-eventos{
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      padding:8px; 
+      border-bottom:2px solid #000;
+      background:#fff;
+    }
+    .titulo{
+      font-size:calc(2.2vh * (var(--eventos-percent) / 30)); 
+      font-weight:bold; 
+      text-align:center;
+    }
+    .lista{
+      flex:1; 
+      overflow-y:auto; 
+      overflow-x:hidden;
+      padding:8px; 
+      display:flex; 
+      flex-direction:column; 
+      gap:6px;
+    }
+    .evento{
+      border-left:4px solid #999; 
+      padding:8px; 
+      background:#f5f5f5; 
+      font-size:calc(1.8vh * (var(--eventos-percent) / 30));
+      border-radius:2px;
+    }
+    .evento .t{
+      font-weight:bold;
+      margin-bottom:3px;
+    }
+    .evento .h{
+      color:#555;
+      font-size:calc(1.6vh * (var(--eventos-percent) / 30));
+    }
+    .evento.atual{
+      background:#fff9e6; 
+      border-left-color:#000; 
+      font-weight:bold;
+      box-shadow:0 0 8px rgba(200,160,0,0.3);
+    }
+    .evento.passado{
+      opacity:0.5; 
+      background:#e8e8e8;
+    }
+    .sem{
+      color:#777; 
+      text-align:center; 
+      padding:20px; 
+      font-size:calc(2vh * (var(--eventos-percent) / 30));
+    }
+
+    /* Esconde scrollbar mas mantém funcionalidade */
+    .lista::-webkit-scrollbar{
+      width:8px;
+    }
+    .lista::-webkit-scrollbar-track{
+      background:#f0f0f0;
+    }
+    .lista::-webkit-scrollbar-thumb{
+      background:#ccc;
+      border-radius:4px;
+    }
   </style>
 </head>
 <body>
-  <!-- Botão textual (sem ícone de engrenagem) -->
-  <button id="btnMenu" class="controles-btn">MENU</button>
-
-  <!-- Painel de controles -->
-  <div id="painel" class="painel">
-    <div class="grupo">
-      <div class="rotulos">Modo de Layout</div>
-      <div class="row">
-        <button class="btn sel" data-modo="paisagem">Paisagem</button>
-        <button class="btn" data-modo="retrato">Retrato</button>
+  <!-- Painel de Controles Flutuante -->
+  <div id="painelControles" class="painel-controles">
+    <button class="btn-toggle" onclick="toggleControles()">⚙️ Controles</button>
+    <div class="conteudo-controles">
+      <div class="grupo-controle">
+        <label class="label-controle">
+          Proporção Relógio/Eventos
+          <span class="valor-controle" id="valorProporcao">70/30</span>
+        </label>
+        <input 
+          type="range" 
+          class="slider-controle" 
+          id="sliderProporcao" 
+          min="40" 
+          max="85" 
+          value="70" 
+          step="5"
+          oninput="ajustarProporcao(this.value)">
       </div>
-    </div>
-
-    <div class="grupo">
-      <div class="rotulos">Tamanho do Relógio</div>
-      <input id="sliderClock" type="range" class="slider" min="60" max="200" value="120">
-    </div>
-
-    <div class="grupo">
-      <div class="rotulos">Dia</div>
-      <div class="row">
-        <button class="btn" data-dia="-1">Ontem</button>
-        <button class="btn sel" data-dia="0">Hoje</button>
-        <button class="btn" data-dia="1">Amanhã</button>
+      
+      <div class="grupo-controle">
+        <label class="label-controle">Selecionar Dia</label>
+        <div class="botoes-dia">
+          <button class="btn-dia" id="btnOntem" onclick="irParaDia(-1)">Ontem</button>
+          <button class="btn-dia ativo" id="btnHoje" onclick="irParaDia(0)">Hoje</button>
+          <button class="btn-dia" id="btnAmanha" onclick="irParaDia(1)">Amanhã</button>
+        </div>
       </div>
-    </div>
 
-    <div class="grupo">
-      <div class="rotulos">Escolher Data</div>
-      <input id="inputData" type="date" class="btn" style="width:100%">
+      <div class="grupo-controle">
+        <button class="btn-girar" id="btnRot" onclick="girarTela()">🔄 Girar 90°</button>
+      </div>
     </div>
   </div>
 
-  <div id="root" class="container"><!-- padrão paisagem -->
-    <!-- Lado esquerdo (Relógio) -->
-    <section id="secClock" class="secao-relogio" style="flex-basis:70%">
-      <div class="clock-top">
-        <span style="font-weight:bold">Relógio</span>
-      </div>
+  <div id="vp" class="viewport rotated">
+    <!-- LADO ESQUERDO: RELÓGIO -->
+    <section class="secao-relogio">
       <div class="relogio-wrap">
         <div id="relogio" class="relogio">00:00</div>
         <div id="data" class="data">–</div>
@@ -115,21 +276,18 @@
       </div>
     </section>
 
-    <!-- Divisor arrastável -->
-    <div id="split" class="splitter" title="Arraste para ajustar"></div>
-
-    <!-- Lado direito (Eventos) -->
-    <section id="secEvents" class="secao-eventos" style="flex-basis:30%">
-      <div class="topo-eventos"><div id="titulo" class="titulo">Eventos de Hoje</div></div>
+    <!-- LADO DIREITO: EVENTOS -->
+    <section class="secao-eventos">
+      <div class="topo-eventos"><div id="titulo" class="titulo">Eventos</div></div>
       <div id="lista" class="lista"><div class="sem">Carregando…</div></div>
     </section>
   </div>
 
   <script>
-  // ===== Configurações =====
-  var TIME_OFFSET_MINUTES = -180; // -3h fixo para o Kindle
-
-  // Dados do Pedro (mantidos)
+  // ====== CONFIG ======
+  var TIME_OFFSET_MINUTES = -180; // -3h (ajuste conforme seu fuso)
+  
+  // Eventos (serão atualizados pelo script Python)
   var eventosData = {
     "2025-11-05":[{"titulo":"⭐ Dia de Guarda","inicio":"00:00","fim":"23:59"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"},{"titulo":"Probabilidade","inicio":"17:00","fim":"20:00"},{"titulo":"Jantar","inicio":"20:00","fim":"21:00"},{"titulo":"Exame","inicio":"21:00","fim":"21:15"},{"titulo":"Ir dormir","inicio":"22:30","fim":"22:30"}],
     "2025-11-06":[{"titulo":"Tempo da Manhã","inicio":"05:00","fim":"08:00"},{"titulo":"Probabilidade","inicio":"08:00","fim":"11:00"},{"titulo":"Terço","inicio":"10:00","fim":"10:45"},{"titulo":"Almoço","inicio":"12:40","fim":"13:30"},{"titulo":"Leitura Espiritual","inicio":"13:45","fim":"14:00"},{"titulo":"Monitoria BV - Math 2","inicio":"14:00","fim":"16:00"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"},{"titulo":"Probabilidade","inicio":"17:00","fim":"20:00"},{"titulo":"Jantar","inicio":"20:00","fim":"21:00"},{"titulo":"Exame","inicio":"21:00","fim":"21:15"},{"titulo":"Ir dormir","inicio":"22:30","fim":"22:30"}],
@@ -141,112 +299,173 @@
     "2025-11-12":[{"titulo":"⭐ Dia de Guarda","inicio":"00:00","fim":"23:59"},{"titulo":"Tempo da Manhã","inicio":"05:00","fim":"08:00"},{"titulo":"Terço ","inicio":"08:00","fim":"08:30"},{"titulo":"Tênis de Mesa","inicio":"08:30","fim":"10:00"},{"titulo":"Contemplação","inicio":"10:15","fim":"10:25"},{"titulo":"Almoço","inicio":"12:40","fim":"13:30"},{"titulo":"Leitura Espiritual","inicio":"13:45","fim":"14:00"},{"titulo":"Oração","inicio":"16:30","fim":"17:00"}]
   };
 
-  function agoraCorrigido(){ var d=new Date(); return new Date(d.getTime()+TIME_OFFSET_MINUTES*60000); }
-  function ymd(d){var a=d.getFullYear(),m=('0'+(d.getMonth()+1)).slice(-2),dia=('0'+d.getDate()).slice(-2);return a+'-'+m+'-'+dia;}
-  function minutos(hhmm){var p=hhmm.split(':'),h=parseInt(p[0],10)||0,m=parseInt(p[1],10)||0;return h*60+m;}
-  var meses=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  var dias=['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
-
+  // ====== FUNÇÕES AUXILIARES ======
+  function agoraCorrigido(){ 
+    var d = new Date(); 
+    return new Date(d.getTime() + TIME_OFFSET_MINUTES * 60000); 
+  }
+  
+  function ymd(d){
+    var a = d.getFullYear();
+    var m = ('0' + (d.getMonth() + 1)).slice(-2);
+    var dia = ('0' + d.getDate()).slice(-2);
+    return a + '-' + m + '-' + dia;
+  }
+  
+  function minutos(hhmm){
+    var p = hhmm.split(':');
+    var h = parseInt(p[0], 10) || 0;
+    var m = parseInt(p[1], 10) || 0;
+    return h * 60 + m;
+  }
+  
+  var meses = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  var dias = ['Domingo','Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado'];
+  
   var dataSel = agoraCorrigido();
+  var offsetDia = 0; // -1=ontem, 0=hoje, 1=amanhã
 
+  // ====== CONTROLES ======
+  function toggleControles(){
+    var painel = document.getElementById('painelControles');
+    if(painel.className.indexOf('minimizado') >= 0){
+      painel.className = 'painel-controles';
+    } else {
+      painel.className = 'painel-controles minimizado';
+    }
+  }
+
+  function ajustarProporcao(valor){
+    var relogioPercent = parseInt(valor);
+    var eventosPercent = 100 - relogioPercent;
+    
+    document.documentElement.style.setProperty('--relogio-percent', relogioPercent);
+    document.documentElement.style.setProperty('--eventos-percent', eventosPercent);
+    
+    document.getElementById('valorProporcao').textContent = relogioPercent + '/' + eventosPercent;
+    
+    // Salvar preferência
+    localStorage.setItem('proporcao', valor);
+  }
+
+  function irParaDia(offset){
+    offsetDia = offset;
+    var agora = agoraCorrigido();
+    dataSel = new Date(agora.getTime() + (offset * 86400000));
+    
+    // Atualizar botões ativos
+    document.getElementById('btnOntem').className = 'btn-dia' + (offset === -1 ? ' ativo' : '');
+    document.getElementById('btnHoje').className = 'btn-dia' + (offset === 0 ? ' ativo' : '');
+    document.getElementById('btnAmanha').className = 'btn-dia' + (offset === 1 ? ' ativo' : '');
+    
+    atualizar();
+  }
+
+  function girarTela(){
+    var vp = document.getElementById('vp');
+    if(vp.className.indexOf('rotated') >= 0){
+      vp.className = 'viewport';
+    } else {
+      vp.className = 'viewport rotated';
+    }
+    // Salvar preferência
+    localStorage.setItem('rotacao', vp.className);
+  }
+
+  // ====== DESENHAR INTERFACE ======
   function desenharHorario(){
-    var n=agoraCorrigido();
-    var h=('0'+n.getHours()).slice(-2), m=('0'+n.getMinutes()).slice(-2);
-    document.getElementById('relogio').style.fontSize = (localStorage.getItem('clockPx')||120)+'px';
-    document.getElementById('relogio').textContent=h+':'+m;
-    document.getElementById('data').textContent=n.getDate()+' de '+meses[n.getMonth()];
-    document.getElementById('semana').textContent=dias[n.getDay()];
+    var n = agoraCorrigido();
+    var h = ('0' + n.getHours()).slice(-2);
+    var m = ('0' + n.getMinutes()).slice(-2);
+    
+    document.getElementById('relogio').innerHTML = h + ':' + m;
+    document.getElementById('data').innerHTML = n.getDate() + ' de ' + meses[n.getMonth()];
+    document.getElementById('semana').innerHTML = dias[n.getDay()];
   }
 
   function estadoEvento(evt, baseDate){
-    var n=agoraCorrigido();
-    var isHoje = ymd(n)===ymd(baseDate);
-    if(!isHoje){ return baseDate<n?'passado':'futuro'; }
-    var t=n.getHours()*60+n.getMinutes(), i=minutos(evt.inicio), f=minutos(evt.fim);
-    if(t<i) return 'futuro'; if(t>=i && t<f) return 'atual'; return 'passado';
+    var n = agoraCorrigido();
+    var isHoje = ymd(n) === ymd(baseDate);
+    
+    if(!isHoje){
+      return baseDate < n ? 'passado' : 'futuro';
+    }
+    
+    var t = n.getHours() * 60 + n.getMinutes();
+    var i = minutos(evt.inicio);
+    var f = minutos(evt.fim);
+    
+    if(t < i) return 'futuro';
+    if(t >= i && t < f) return 'atual';
+    return 'passado';
   }
 
   function desenharEventos(){
-    var key=ymd(dataSel), evts=eventosData[key]||[];
-    var n=agoraCorrigido(), hj=ymd(n), ont=new Date(n.getTime()-86400000), am=new Date(n.getTime()+86400000);
-    var titulo='Eventos de ' + (key===hj?'Hoje':(key===ymd(ont)?'Ontem':(key===ymd(am)?'Amanhã':(dataSel.getDate()+' de '+meses[dataSel.getMonth()]))));
-    document.getElementById('titulo').textContent=titulo;
-    var lista=document.getElementById('lista');
-    if(!evts.length){ lista.innerHTML='<div class="sem">Nenhum evento para este dia</div>'; return; }
-    var html='';
-    for(var i=0;i<evts.length;i++){
-      var e=evts[i], st=estadoEvento(e,dataSel);
-      html+='<div class="evento '+st+'"><div class="t">'+e.titulo+'</div><div class="h">'+e.inicio+' – '+e.fim+'</div></div>';
+    var key = ymd(dataSel);
+    var evts = eventosData[key] || [];
+    
+    var n = agoraCorrigido();
+    var hj = ymd(n);
+    var ont = new Date(n.getTime() - 86400000);
+    var am = new Date(n.getTime() + 86400000);
+    
+    var titulo = 'Eventos de ';
+    if(key === hj){
+      titulo += 'Hoje';
+    } else if(key === ymd(ont)){
+      titulo += 'Ontem';
+    } else if(key === ymd(am)){
+      titulo += 'Amanhã';
+    } else {
+      titulo += dataSel.getDate() + ' de ' + meses[dataSel.getMonth()];
     }
-    lista.innerHTML=html;
-  }
-
-  function atualizar(){desenharHorario();desenharEventos();}
-
-  // ===== Menu / painel =====
-  var painel = document.getElementById('painel');
-  document.getElementById('btnMenu').onclick=function(){ painel.classList.toggle('aberto'); };
-  document.addEventListener('click',function(e){ if(!painel.contains(e.target) && e.target.id!=='btnMenu'){ painel.classList.remove('aberto'); }});
-
-  // Slider de relógio (px) + persistência
-  var slider = document.getElementById('sliderClock');
-  var salvo = localStorage.getItem('clockPx'); if(salvo){ slider.value=salvo; }
-  slider.oninput=function(){ localStorage.setItem('clockPx', this.value); desenharHorario(); };
-
-  // Botões de modo
-  var root = document.getElementById('root');
-  function setModo(m){
-    root.classList.remove('retrato'); root.classList.remove('paisagem');
-    root.classList.add(m); localStorage.setItem('modo',m);
-    document.querySelectorAll('[data-modo]').forEach(b=>b.classList.toggle('sel', b.getAttribute('data-modo')===m));
-  }
-  document.querySelectorAll('[data-modo]').forEach(b=>{ b.onclick=function(){ setModo(this.getAttribute('data-modo')); }; });
-  setModo(localStorage.getItem('modo')||'paisagem');
-
-  // Botões de dia rápido
-  document.querySelectorAll('[data-dia]').forEach(b=>{
-    b.onclick=function(){
-      document.querySelectorAll('[data-dia]').forEach(x=>x.classList.remove('sel'));
-      this.classList.add('sel');
-      var off=parseInt(this.getAttribute('data-dia')); var base=agoraCorrigido(); base.setDate(base.getDate()+off); dataSel=base;
-      document.getElementById('inputData').value = ymd(dataSel);
-      atualizar();
-    };
-  });
-
-  // Input de data
-  var inp = document.getElementById('inputData'); inp.value=ymd(dataSel);
-  inp.onchange=function(){ if(this.value){ var p=this.value.split('-'); dataSel=new Date(parseInt(p[0]),parseInt(p[1])-1,parseInt(p[2])); atualizar(); }};
-
-  // ===== Splitter arrastável (funciona com mouse e toque) =====
-  var split = document.getElementById('split');
-  var secClock = document.getElementById('secClock');
-  var secEvents = document.getElementById('secEvents');
-
-  function aplicarSplit(p){ // p = % do relógio
-    if(p<55) p=55; if(p>90) p=90; // limites para não esmagar
-    secClock.style.flexBasis = p + '%';
-    secEvents.style.flexBasis = (100 - p) + '%';
-    localStorage.setItem('splitP', p);
-  }
-  aplicarSplit(parseFloat(localStorage.getItem('splitP')||'70'));
-
-  function iniciarDrag(startX){
-    var rect = root.getBoundingClientRect();
-    function mover(clientX){
-      var x = Math.min(Math.max(clientX - rect.left, 80), rect.width-80);
-      var percent = (x / rect.width) * 100; aplicarSplit(percent);
+    
+    document.getElementById('titulo').innerHTML = titulo;
+    
+    var lista = document.getElementById('lista');
+    if(!evts.length){
+      lista.innerHTML = '<div class="sem">Nenhum evento para este dia</div>';
+      return;
     }
-    function onMove(e){ mover(e.touches? e.touches[0].clientX : e.clientX); }
-    function onUp(){ document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onUp); }
-    document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onUp); document.addEventListener('touchmove', onMove, {passive:false}); document.addEventListener('touchend', onUp);
+    
+    var html = '';
+    for(var i = 0; i < evts.length; i++){
+      var e = evts[i];
+      var st = estadoEvento(e, dataSel);
+      html += '<div class="evento ' + st + '">';
+      html += '<div class="t">' + e.titulo + '</div>';
+      html += '<div class="h">' + e.inicio + ' – ' + e.fim + '</div>';
+      html += '</div>';
+    }
+    lista.innerHTML = html;
   }
-  split.addEventListener('mousedown', function(e){ iniciarDrag(e.clientX); });
-  split.addEventListener('touchstart', function(e){ iniciarDrag(e.touches[0].clientX); }, {passive:true});
 
-  // ===== Inicialização =====
+  function atualizar(){
+    desenharHorario();
+    desenharEventos();
+  }
+
+  // ====== CARREGAR PREFERÊNCIAS ======
+  function carregarPreferencias(){
+    // Carregar proporção salva
+    var propSalva = localStorage.getItem('proporcao');
+    if(propSalva){
+      document.getElementById('sliderProporcao').value = propSalva;
+      ajustarProporcao(propSalva);
+    }
+    
+    // Carregar rotação salva
+    var rotSalva = localStorage.getItem('rotacao');
+    if(rotSalva){
+      document.getElementById('vp').className = rotSalva;
+    }
+  }
+
+  // ====== INICIALIZAÇÃO ======
+  carregarPreferencias();
   atualizar();
-  // Atualiza a cada minuto
+  
+  // Atualizar a cada minuto
   setInterval(atualizar, 60000);
   </script>
 </body>

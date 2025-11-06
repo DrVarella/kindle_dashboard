@@ -143,21 +143,21 @@
     .relogio{
       font-family:"Courier New", monospace;
       font-weight:bold;
-      /* tamanho responsivo baseado na proporção - aumentado para Kindle */
-      font-size:calc(min(40vh, 40vw) * (var(--relogio-percent) / 70));
+      /* tamanho fixo em pixels - igual ao index.html */
+      font-size:120px;
       line-height:1;
       margin-bottom:12px;
       text-align:center;
       color:#000;
     }
     .data{
-      font-size:calc(5vh * (var(--relogio-percent) / 70));
+      font-size:24px;
       margin-bottom:6px;
       text-align:center;
       color:#333;
     }
     .semana{
-      font-size:calc(4.2vh * (var(--relogio-percent) / 70));
+      font-size:20px;
       color:#666;
       text-align:center;
     }
@@ -237,16 +237,32 @@
     <div class="conteudo-controles">
       <div class="grupo-controle">
         <label class="label-controle">
+          Tamanho do Relógio
+          <span class="valor-controle" id="valorTamanho">120px</span>
+        </label>
+        <input
+          type="range"
+          class="slider-controle"
+          id="sliderTamanho"
+          min="60"
+          max="200"
+          value="120"
+          step="10"
+          oninput="ajustarTamanho(this.value)">
+      </div>
+
+      <div class="grupo-controle">
+        <label class="label-controle">
           Proporção Relógio/Eventos
           <span class="valor-controle" id="valorProporcao">70/30</span>
         </label>
-        <input 
-          type="range" 
-          class="slider-controle" 
-          id="sliderProporcao" 
-          min="40" 
-          max="85" 
-          value="70" 
+        <input
+          type="range"
+          class="slider-controle"
+          id="sliderProporcao"
+          min="40"
+          max="85"
+          value="70"
           step="5"
           oninput="ajustarProporcao(this.value)">
       </div>
@@ -337,15 +353,24 @@
     }
   }
 
+  function ajustarTamanho(valor){
+    var tamanho = parseInt(valor);
+    document.getElementById('relogio').style.fontSize = tamanho + 'px';
+    document.getElementById('valorTamanho').textContent = tamanho + 'px';
+
+    // Salvar preferência
+    localStorage.setItem('tamanhoRelogio', valor);
+  }
+
   function ajustarProporcao(valor){
     var relogioPercent = parseInt(valor);
     var eventosPercent = 100 - relogioPercent;
-    
+
     document.documentElement.style.setProperty('--relogio-percent', relogioPercent);
     document.documentElement.style.setProperty('--eventos-percent', eventosPercent);
-    
+
     document.getElementById('valorProporcao').textContent = relogioPercent + '/' + eventosPercent;
-    
+
     // Salvar preferência
     localStorage.setItem('proporcao', valor);
   }
@@ -453,6 +478,13 @@
     var painelAberto = localStorage.getItem('painelAberto');
     if(painelAberto === 'true'){
       document.getElementById('painelControles').className = 'painel-controles';
+    }
+
+    // Carregar tamanho do relógio salvo
+    var tamanhoSalvo = localStorage.getItem('tamanhoRelogio');
+    if(tamanhoSalvo){
+      document.getElementById('sliderTamanho').value = tamanhoSalvo;
+      ajustarTamanho(tamanhoSalvo);
     }
 
     // Carregar proporção salva

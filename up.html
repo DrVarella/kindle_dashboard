@@ -141,24 +141,24 @@
       padding:20px;
     }
     .relogio{
-      font-family:"Courier New", monospace; 
+      font-family:"Courier New", monospace;
       font-weight:bold;
-      /* tamanho responsivo baseado na proporção */
-      font-size:calc(min(22vh, 22vw) * (var(--relogio-percent) / 70));
-      line-height:1; 
-      margin-bottom:12px; 
+      /* tamanho responsivo baseado na proporção - aumentado para Kindle */
+      font-size:calc(min(40vh, 40vw) * (var(--relogio-percent) / 70));
+      line-height:1;
+      margin-bottom:12px;
       text-align:center;
       color:#000;
     }
     .data{
-      font-size:calc(2.8vh * (var(--relogio-percent) / 70)); 
-      margin-bottom:6px; 
+      font-size:calc(5vh * (var(--relogio-percent) / 70));
+      margin-bottom:6px;
       text-align:center;
       color:#333;
     }
     .semana{
-      font-size:calc(2.4vh * (var(--relogio-percent) / 70)); 
-      color:#666; 
+      font-size:calc(4.2vh * (var(--relogio-percent) / 70));
+      color:#666;
       text-align:center;
     }
 
@@ -232,7 +232,7 @@
 </head>
 <body>
   <!-- Painel de Controles Flutuante -->
-  <div id="painelControles" class="painel-controles">
+  <div id="painelControles" class="painel-controles minimizado">
     <button class="btn-toggle" onclick="toggleControles()">⚙️ Controles</button>
     <div class="conteudo-controles">
       <div class="grupo-controle">
@@ -330,8 +330,10 @@
     var painel = document.getElementById('painelControles');
     if(painel.className.indexOf('minimizado') >= 0){
       painel.className = 'painel-controles';
+      localStorage.setItem('painelAberto', 'true');
     } else {
       painel.className = 'painel-controles minimizado';
+      localStorage.setItem('painelAberto', 'false');
     }
   }
 
@@ -447,13 +449,19 @@
 
   // ====== CARREGAR PREFERÊNCIAS ======
   function carregarPreferencias(){
+    // Carregar estado do painel
+    var painelAberto = localStorage.getItem('painelAberto');
+    if(painelAberto === 'true'){
+      document.getElementById('painelControles').className = 'painel-controles';
+    }
+
     // Carregar proporção salva
     var propSalva = localStorage.getItem('proporcao');
     if(propSalva){
       document.getElementById('sliderProporcao').value = propSalva;
       ajustarProporcao(propSalva);
     }
-    
+
     // Carregar rotação salva
     var rotSalva = localStorage.getItem('rotacao');
     if(rotSalva){

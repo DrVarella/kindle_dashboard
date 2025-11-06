@@ -496,11 +496,17 @@
     var secaoRelogio = document.querySelector('.secao-relogio');
 
     if(checkbox.checked){
+      // Mostrar eventos - relógio menor (130px)
       secaoEventos.classList.remove('oculto');
       secaoRelogio.classList.remove('expandido');
+      ajustarTamanho(130);
+      document.getElementById('sliderTamanho').value = 130;
     } else {
+      // Ocultar eventos - relógio maior (200px)
       secaoEventos.classList.add('oculto');
       secaoRelogio.classList.add('expandido');
+      ajustarTamanho(200);
+      document.getElementById('sliderTamanho').value = 200;
     }
 
     // Salvar preferência
@@ -691,13 +697,6 @@
       document.getElementById('painelControles').className = 'painel-controles';
     }
 
-    // Carregar tamanho do relógio salvo
-    var tamanhoSalvo = localStorage.getItem('tamanhoRelogio');
-    if(tamanhoSalvo){
-      document.getElementById('sliderTamanho').value = tamanhoSalvo;
-      ajustarTamanho(tamanhoSalvo);
-    }
-
     // Carregar proporção salva
     var propSalva = localStorage.getItem('proporcao');
     if(propSalva){
@@ -711,6 +710,20 @@
       document.getElementById('checkMostrarEventos').checked = false;
       document.querySelector('.secao-eventos').classList.add('oculto');
       document.querySelector('.secao-relogio').classList.add('expandido');
+      // Ajustar relógio para 200px quando eventos ocultos
+      ajustarTamanho(200);
+      document.getElementById('sliderTamanho').value = 200;
+    } else {
+      // Ajustar relógio para 130px quando eventos visíveis
+      ajustarTamanho(130);
+      document.getElementById('sliderTamanho').value = 130;
+    }
+
+    // Carregar tamanho do relógio salvo (se existir, sobrescreve o padrão acima)
+    var tamanhoSalvo = localStorage.getItem('tamanhoRelogio');
+    if(tamanhoSalvo){
+      document.getElementById('sliderTamanho').value = tamanhoSalvo;
+      ajustarTamanho(tamanhoSalvo);
     }
   }
 

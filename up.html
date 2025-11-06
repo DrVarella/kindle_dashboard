@@ -48,7 +48,7 @@
     .painel-controles{
       position:fixed;
       top:10px;
-      left:10px;
+      right:10px;
       background:rgba(255,255,255,0.98);
       border:2px solid #000;
       border-radius:8px;
@@ -58,9 +58,9 @@
       max-width:340px;
       transition:all 0.3s ease;
     }
-    /* Quando a viewport está rotacionada, o painel também rotaciona */
+    /* Quando a viewport está rotacionada, o painel também rotaciona 90 graus (sentido horário) */
     .painel-controles.rotacionado{
-      transform:rotate(-90deg);
+      transform:rotate(90deg);
       transform-origin:top right;
     }
     .painel-controles.minimizado{

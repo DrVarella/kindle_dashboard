@@ -172,8 +172,8 @@
       background:#fff;
     }
     .titulo{
-      font-size:calc(2.2vh * (var(--eventos-percent) / 30)); 
-      font-weight:bold; 
+      font-size:24px;
+      font-weight:bold;
       text-align:center;
     }
     .lista{
@@ -186,19 +186,20 @@
       gap:6px;
     }
     .evento{
-      border-left:4px solid #999; 
-      padding:8px; 
-      background:#f5f5f5; 
-      font-size:calc(1.8vh * (var(--eventos-percent) / 30));
-      border-radius:2px;
+      border-left:4px solid #999;
+      padding:12px;
+      background:#f5f5f5;
+      font-size:18px;
+      border-radius:4px;
     }
     .evento .t{
       font-weight:bold;
-      margin-bottom:3px;
+      margin-bottom:4px;
+      font-size:20px;
     }
     .evento .h{
       color:#555;
-      font-size:calc(1.6vh * (var(--eventos-percent) / 30));
+      font-size:16px;
     }
     .evento.atual{
       background:#fff9e6; 
@@ -211,10 +212,10 @@
       background:#e8e8e8;
     }
     .sem{
-      color:#777; 
-      text-align:center; 
-      padding:20px; 
-      font-size:calc(2vh * (var(--eventos-percent) / 30));
+      color:#777;
+      text-align:center;
+      padding:20px;
+      font-size:18px;
     }
 
     /* Esconde scrollbar mas mantém funcionalidade */
@@ -228,12 +229,53 @@
       background:#ccc;
       border-radius:4px;
     }
+
+    /* Contador de Próximo Evento */
+    .contador-evento{
+      position:absolute;
+      bottom:20px;
+      left:20px;
+      right:20px;
+      background:#fff;
+      border:3px solid #000;
+      border-radius:8px;
+      padding:16px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.15);
+    }
+    .contador-titulo{
+      font-size:18px;
+      font-weight:bold;
+      margin-bottom:8px;
+      color:#000;
+      text-align:center;
+    }
+    .contador-tempo{
+      font-size:32px;
+      font-weight:bold;
+      color:#000;
+      text-align:center;
+      font-family:"Courier New", monospace;
+      margin-bottom:4px;
+    }
+    .contador-label{
+      font-size:14px;
+      color:#666;
+      text-align:center;
+    }
+    .contador-evento.atual{
+      background:#fff9e6;
+      border-color:#ffd700;
+    }
+    .contador-evento.proximo{
+      background:#f0f8ff;
+      border-color:#4682b4;
+    }
   </style>
 </head>
 <body>
   <!-- Painel de Controles Flutuante -->
   <div id="painelControles" class="painel-controles minimizado">
-    <button class="btn-toggle" onclick="toggleControles()">⚙️ Controles</button>
+    <button class="btn-toggle" onclick="toggleControles()">...</button>
     <div class="conteudo-controles">
       <div class="grupo-controle">
         <label class="label-controle">
@@ -289,6 +331,13 @@
         <div id="relogio" class="relogio">00:00</div>
         <div id="data" class="data">–</div>
         <div id="semana" class="semana">–</div>
+      </div>
+
+      <!-- Contador de Próximo Evento -->
+      <div id="contadorEvento" class="contador-evento">
+        <div class="contador-titulo" id="contadorTitulo">—</div>
+        <div class="contador-tempo" id="contadorTempo">—</div>
+        <div class="contador-label" id="contadorLabel">—</div>
       </div>
     </section>
 
@@ -467,9 +516,98 @@
     lista.innerHTML = html;
   }
 
+  function atualizarContador(){
+    var key = ymd(dataSel);
+    var evts = eventosData[key] || [];
+    var n = agoraCorrigido();
+    var hj = ymd(n);
+
+    // Só mostrar contador para hoje
+    var contador = document.getElementById('contadorEvento');
+    if(key !== hj || evts.length === 0){
+      contador.style.display = 'none';
+      return;
+    }
+
+    contador.style.display = 'block';
+    var agora = n.getHours() * 60 + n.getMinutes();
+    var eventoAtual = null;
+    var proximoEvento = null;
+
+    // Procurar evento atual ou próximo
+    for(var i = 0; i < evts.length; i++){
+      var e = evts[i];
+      var inicio = minutos(e.inicio);
+      var fim = minutos(e.fim);
+
+      if(agora >= inicio && agora < fim){
+        eventoAtual = e;
+        break;
+      }
+
+      if(agora < inicio && !proximoEvento){
+        proximoEvento = e;
+      }
+    }
+
+    var titulo = document.getElementById('contadorTitulo');
+    var tempo = document.getElementById('contadorTempo');
+    var label = document.getElementById('contadorLabel');
+
+    if(eventoAtual){
+      // Evento acontecendo agora
+      contador.className = 'contador-evento atual';
+      titulo.textContent = eventoAtual.titulo;
+
+      var fimMin = minutos(eventoAtual.fim);
+      var diff = fimMin - agora;
+
+      if(diff <= 0){
+        tempo.textContent = 'Terminando...';
+        label.textContent = '';
+      } else {
+        var horas = Math.floor(diff / 60);
+        var mins = diff % 60;
+
+        if(horas > 0){
+          tempo.textContent = horas + 'h ' + mins + 'min';
+        } else {
+          tempo.textContent = mins + ' min';
+        }
+        label.textContent = 'para terminar';
+      }
+    } else if(proximoEvento){
+      // Próximo evento
+      contador.className = 'contador-evento proximo';
+      titulo.textContent = proximoEvento.titulo;
+
+      var inicioMin = minutos(proximoEvento.inicio);
+      var diff = inicioMin - agora;
+
+      if(diff <= 0){
+        tempo.textContent = 'Começando...';
+        label.textContent = '';
+      } else {
+        var horas = Math.floor(diff / 60);
+        var mins = diff % 60;
+
+        if(horas > 0){
+          tempo.textContent = horas + 'h ' + mins + 'min';
+        } else {
+          tempo.textContent = mins + ' min';
+        }
+        label.textContent = 'para começar';
+      }
+    } else {
+      // Todos os eventos já passaram
+      contador.style.display = 'none';
+    }
+  }
+
   function atualizar(){
     desenharHorario();
     desenharEventos();
+    atualizarContador();
   }
 
   // ====== CARREGAR PREFERÊNCIAS ======
@@ -504,9 +642,12 @@
   // ====== INICIALIZAÇÃO ======
   carregarPreferencias();
   atualizar();
-  
+
   // Atualizar a cada minuto
   setInterval(atualizar, 60000);
+
+  // Atualizar contador a cada 30 segundos para contagem mais precisa
+  setInterval(atualizarContador, 30000);
   </script>
 </body>
 </html>
